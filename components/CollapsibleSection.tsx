@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import clsx from 'clsx';
-import { ArrowLeftIcon } from '@heroicons/react/24/solid';
+import { ChevronLeftIcon } from '@heroicons/react/24/solid';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -52,7 +52,7 @@ export default function CollapsibleSection({
           onClick={onToggle}
         >
           {isOpen && (
-            <ArrowLeftIcon 
+            <ChevronLeftIcon 
               className="h-6 w-6 text-white transform transition-transform duration-300 hover:scale-110"
               aria-hidden="true"
             />

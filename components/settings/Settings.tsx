@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { UserIcon, CogIcon, UsersIcon, ChatBubbleLeftRightIcon, KeyboardIcon } from '@heroicons/react/24/solid';
-import SettingsSection from '@/components/ui/SettingsSection';
+import { UserIcon, Cog6ToothIcon as CogIcon, UsersIcon, ChatBubbleLeftRightIcon, CommandLineIcon } from '@heroicons/react/24/solid';
+import SettingsSection from '../ui/SettingsSection';
 import PersonalSettings from './PersonalSettings';
 import ApiSettings from './ApiSettings';
 import UserManagement from './UserManagement';
@@ -21,7 +21,7 @@ export default function Settings() {
     { id: 'api', title: 'API/Webhook Settings', icon: CogIcon, isOpen: false, component: ApiSettings },
     { id: 'users', title: 'User Management', icon: UsersIcon, isOpen: false, component: UserManagement },
     { id: 'conversation', title: 'Conversation Settings', icon: ChatBubbleLeftRightIcon, isOpen: false, component: ConversationSettings },
-    { id: 'input', title: 'User Input Methods', icon: KeyboardIcon, isOpen: false, component: InputSettings }
+    { id: 'input', title: 'User Input Methods', icon: CommandLineIcon, isOpen: false, component: InputSettings }
   ]);
 
   const toggleSection = (id: string) => {
