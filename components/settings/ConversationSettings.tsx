@@ -1,10 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 
 export default function ConversationSettings() {
   const [settings, setSettings] = useState({
     responseStyle: 'Professional',
     memoryContext: 5
   });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const { data, error } = await supabase
+      .from('conversation_settings')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching settings:', error);
+      return;
+    }
+
+    if (data) {
+      setSettings({
+        responseStyle: data.response_style || 'Professional',
+        memoryContext: data.memory_context || 5
+      });
+    }
+    setIsLoading(false);
+  };
+
+  const updateSetting = async (key: string, value: string | number) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const updates = {
+      user_id: session.user.id,
+      [key === 'responseStyle' ? 'response_style' : 'memory_context']: value,
+    };
+
+    const { error } = await supabase
+      .from('conversation_settings')
+      .upsert(updates, { onConflict: 'user_id' });
+
+    if (error) {
+      console.error('Error updating settings:', error);
+      return;
+    }
+
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
 
   return (
     <div className="space-y-4 pt-4">
@@ -12,7 +63,7 @@ export default function ConversationSettings() {
         <h4 className="font-medium">Response Style</h4>
         <select
           value={settings.responseStyle}
-          onChange={(e) => setSettings(prev => ({ ...prev, responseStyle: e.target.value }))}
+          onChange={(e) => updateSetting('responseStyle', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option>Professional</option>

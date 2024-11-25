@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 
 interface InputMethod {
   id: string;
@@ -12,11 +13,59 @@ export default function InputSettings() {
     { id: 'voice', name: 'Voice', enabled: false },
     { id: 'file', name: 'File Upload', enabled: false }
   ]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const toggleMethod = (id: string) => {
-    setInputMethods(prev => prev.map(method => 
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const { data, error } = await supabase
+      .from('input_settings')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching settings:', error);
+      return;
+    }
+
+    if (data) {
+      setInputMethods(prev => prev.map(method => ({
+        ...method,
+        enabled: data[`${method.id}_enabled`] ?? method.enabled
+      })));
+    }
+    setIsLoading(false);
+  };
+
+  const toggleMethod = async (id: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const newMethods = inputMethods.map(method => 
       method.id === id ? { ...method, enabled: !method.enabled } : method
-    ));
+    );
+
+    const updates = {
+      user_id: session.user.id,
+      [`${id}_enabled`]: !inputMethods.find(m => m.id === id)?.enabled
+    };
+
+    const { error } = await supabase
+      .from('input_settings')
+      .upsert(updates, { onConflict: 'user_id' });
+
+    if (error) {
+      console.error('Error updating input methods:', error);
+      return;
+    }
+
+    setInputMethods(newMethods);
   };
 
   return (

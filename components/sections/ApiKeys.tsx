@@ -1,38 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EyeIcon, EyeSlashIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { useCredentialAccess } from '../../lib/hooks/useCredentialAccess';
 
 interface ApiKey {
-  id: number;
+  id: string;
   name: string;
   key: string;
-  created: Date;
+  created_at: string;
 }
 
+const formatDate = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
 export default function ApiKeys() {
-  const [keys, setKeys] = useState<ApiKey[]>([
-    { id: 1, name: 'Production API Key', key: 'pk_live_123456789', created: new Date(2023, 11, 1) },
-    { id: 2, name: 'Development API Key', key: 'pk_test_987654321', created: new Date(2023, 11, 15) }
-  ]);
-  const [showKey, setShowKey] = useState<number | null>(null);
+  const { hasAccess, isLoading, client } = useCredentialAccess('ApiKeys');
+  const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [showKey, setShowKey] = useState<string | null>(null);
   const [newKeyName, setNewKeyName] = useState('');
 
-  const handleAddKey = () => {
+  useEffect(() => {
+    if (hasAccess) {
+      fetchApiKeys();
+    }
+  }, [hasAccess]);
+
+  const fetchApiKeys = async () => {
+    try {
+      const { data, error } = await client
+        .from('api_keys')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        if (error.code === '42P01') {
+          console.error('Table api_keys does not exist');
+          return;
+        }
+        console.error('Error fetching API keys:', error);
+        return;
+      }
+
+      setKeys(data || []);
+    } catch (err) {
+      console.error('Failed to fetch API keys:', err);
+    }
+  };
+
+  const handleAddKey = async () => {
     if (!newKeyName.trim()) return;
     
-    const newKey: ApiKey = {
-      id: Date.now(),
+    const newKey = {
       name: newKeyName,
-      key: `pk_${Math.random().toString(36).substring(2, 15)}`,
-      created: new Date()
+      key: `pk_${Math.random().toString(36).substring(2, 15)}`
     };
     
-    setKeys(prev => [...prev, newKey]);
+    const { error } = await client
+      .from('api_keys')
+      .insert([newKey]);
+
+    if (error) {
+      console.error('Error adding API key:', error);
+      return;
+    }
+    
+    fetchApiKeys();
     setNewKeyName('');
   };
 
-  const handleDeleteKey = (id: number) => {
-    setKeys(prev => prev.filter(key => key.id !== id));
+  const handleDeleteKey = async (id: string) => {
+    const { error } = await client
+      .from('api_keys')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting API key:', error);
+      return;
+    }
+
+    fetchApiKeys();
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!hasAccess) {
+    return <div>You don&apos;t have permission to access this section.</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -74,7 +134,7 @@ export default function ApiKeys() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Created: {key.created.toLocaleDateString()}
+                Created: {formatDate(key.created_at)}
               </p>
             </div>
             <button

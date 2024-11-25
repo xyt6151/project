@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { UserIcon, CogIcon, UsersIcon, ChatBubbleLeftRightIcon, KeyboardIcon } from '@heroicons/react/24/solid';
+import { UserIcon, CogIcon, UsersIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/solid';
 import { ChevronDownIcon } from '@heroicons/react/24/solid';
+import { KeyboardIcon } from 'lucide-react';
 
 // Sub-components for settings sections
 const PersonalSettings = () => {
@@ -173,7 +174,7 @@ const InputSettings = () => {
 };
 
 // SettingsSection component
-const SettingsSection = ({ title, icon: Icon, isOpen, onToggle, children }) => {
+const SettingsSection = ({ title, icon: Icon, isOpen, onToggle, children }: { title: string, icon: React.ElementType, isOpen: boolean, onToggle: () => void, children: React.ReactNode }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <button

@@ -1,39 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
+import { useCredentialAccess } from '../../lib/hooks/useCredentialAccess';
 
 interface Message {
-  id: number;
+  id: string;
   text: string;
   sender: 'user' | 'system';
-  timestamp: Date;
+  timestamp: string;
+  user_id?: string;
 }
 
-export default function SystemChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 1, text: 'Hello! How can I assist you today?', sender: 'system', timestamp: new Date() }
-  ]);
-  const [newMessage, setNewMessage] = useState('');
+const formatTime = (date: Date) => {
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+};
 
-  const handleSend = () => {
+export default function SystemChat() {
+  const { hasAccess, isLoading, client } = useCredentialAccess('SystemChat');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [session, setSession] = useState<any>(null);
+
+  const checkSession = async () => {
+    const { data: { session: currentSession } } = await client.auth.getSession();
+    setSession(currentSession);
+  };
+
+  const fetchMessages = async () => {
+    if (!hasAccess) return;
+    
+    const { data, error } = await client
+      .from('messages')
+      .select('*')
+      .order('timestamp', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching messages:', error);
+      return;
+    }
+
+    setMessages(data || []);
+  };
+
+  useEffect(() => {
+    checkSession();
+    fetchMessages();
+
+    // Subscribe to new messages
+    const channel = client
+      .channel('chat_messages')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        payload => {
+          setMessages(prev => [...prev, payload.new as Message]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [client, hasAccess]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!hasAccess) {
+    return <div>You don&apos;t have permission to access this section.</div>;
+  }
+
+  const handleSend = async () => {
     if (!newMessage.trim()) return;
     
-    setMessages(prev => [...prev, {
-      id: Date.now(),
+    const newMsg: Partial<Message> = {
       text: newMessage,
       sender: 'user',
-      timestamp: new Date()
-    }]);
-    setNewMessage('');
+      timestamp: new Date().toISOString(),
+      user_id: session?.user?.id
+    };
 
-    // Simulate system response
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        id: Date.now(),
-        text: 'Thank you for your message. I\'ll process that right away.',
-        sender: 'system',
-        timestamp: new Date()
-      }]);
-    }, 1000);
+    const { error } = await client
+      .from('messages')
+      .insert(newMsg);
+
+    if (error) {
+      console.error('Error sending message:', error);
+      return;
+    }
+
+    setNewMessage('');
   };
 
   return (
@@ -53,7 +112,7 @@ export default function SystemChat() {
             >
               <p>{message.text}</p>
               <p className="text-xs opacity-75 mt-1">
-                {message.timestamp.toLocaleTimeString()}
+                {formatTime(new Date(message.timestamp))}
               </p>
             </div>
           </div>

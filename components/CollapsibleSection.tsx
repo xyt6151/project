@@ -31,15 +31,15 @@ export default function CollapsibleSection({
         isHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'
       )}
       style={{
-        position: isActive ? 'absolute' : 'relative',
-        top: isActive ? 0 : `${index * (isHidden ? 0 : 56)}px`,
-        left: 0,
-        right: 0,
+        position: isActive ? 'fixed' : 'relative',
+        top: isActive ? '80px' : `${index * (isHidden ? 0 : 56)}px`,
+        left: isActive ? '16px' : '0',
+        right: isActive ? '16px' : '0',
         transform: isHidden ? 'translateY(100vh)' : 'translateY(0)',
         transition: 'all 500ms cubic-bezier(0.4, 0, 0.2, 1)',
         transitionDelay: isHidden ? `${index * 100}ms` : '0ms',
         zIndex: isActive ? 20 : 10,
-        height: isActive ? '400px' : '52px',
+        height: isActive ? 'calc(100vh - 96px)' : '52px',
         marginBottom: isActive ? 0 : '8px'
       }}
     >
@@ -58,12 +58,12 @@ export default function CollapsibleSection({
             />
           )}
         </div>
-        <div className="flex-1 p-3 overflow-hidden">
+        <div className="flex-1 p-3 overflow-hidden flex flex-col">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <div 
             className={clsx(
-              'transition-all duration-500 ease-in-out overflow-hidden',
-              isOpen ? 'opacity-100 mt-4' : 'opacity-0 h-0'
+              'transition-all duration-500 ease-in-out overflow-auto custom-scrollbar',
+              isOpen ? 'opacity-100 mt-4 flex-1' : 'opacity-0 h-0'
             )}
           >
             {children}

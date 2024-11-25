@@ -1,132 +1,152 @@
-import { Fragment, useState, KeyboardEvent } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Combobox, Transition } from '@headlessui/react';
 import { LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/solid';
+import { supabase } from '../lib/supabase';
 
-const users = [
-  { id: 1, name: 'alice_dev' },
-  { id: 2, name: 'bob_admin' },
-  { id: 3, name: 'charlie_user' },
-  { id: 4, name: 'diana_test' },
-];
+interface User {
+  id: string;
+  email: string;
+  role: string;
+}
 
 export default function UserCombobox() {
-  const [selected, setSelected] = useState<any>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selected, setSelected] = useState<User | null>(null);
   const [query, setQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordMode, setIsPasswordMode] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    checkCurrentSession();
+  }, []);
+
+  const handleInputSubmit = async () => {
+    if (!query.trim()) return;
+    setSelected(user);
+    if (!isPasswordMode) {
+      setIsLoading(true);
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: query,
+          password: 'dummy_password'
+        });
+
+        if (error && error.message.includes('Invalid login credentials')) {
+          setSelected({
+            id: '',
+            email: query,
+            role: 'user'
+          });
+          setIsPasswordMode(true);
+          setQuery('');
+        } else {
+          console.error('User not found');
+        }
+      } catch (error) {
+        console.error('Error checking user:', error);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    } else if (query.trim()) {
+      try {
+        setIsLoading(true);
+        const { error } = await supabase.auth.signInWithPassword({
+          email: selected?.email || '',
+          password: query
+        });
+
+        if (error) throw error;
+
+        if (!isLoggedIn && query.length > 0) {
+          setIsLoggedIn(true);
+          setIsPasswordMode(false);
+          setQuery(selected?.email || '');
+        }
+      } catch (error) {
+        console.error('Error logging in:', error);
+        setIsPasswordMode(false);
+        setSelected(null);
+        setQuery('');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   const filteredUsers = query === ''
     ? []
-    : users.filter((user) =>
-        user.name.toLowerCase().includes(query.toLowerCase())
-      );
+    : users;
 
-  const handleSelect = (user: any) => {
-    setSelected(user);
-    setQuery(user.name);
-    setShowSuggestions(false);
-  };
-
-  const handleLogin = () => {
-    if (query.trim()) {
+  const checkCurrentSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
       setIsLoggedIn(true);
-      setShowSuggestions(false);
+      setQuery(session.user.email || '');
+      setSelected({
+        id: session.user.id,
+        email: session.user.email || '',
+        role: session.user.user_metadata?.role || 'user'
+      });
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+      return;
+    }
+    
     setIsLoggedIn(false);
+    setIsPasswordMode(false);
     setSelected(null);
     setQuery('');
-    setShowSuggestions(false);
+    setUsers([]);
   };
 
-  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+  const getPlaceholderText = () => {
+    if (isLoggedIn) return selected?.email;
+    if (isPasswordMode) return "Password...";
+    return "Username...";
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      if (!isLoggedIn && query.trim()) {
-        handleLogin();
-      }
-      setShowSuggestions(false);
+      e.preventDefault();
+      handleInputSubmit();
     }
-  };
-
-  const handleLockClick = () => {
-    if (isLoggedIn) {
-      handleLogout();
-    } else if (query.trim()) {
-      handleLogin();
-    }
-  };
-
-  const handleInputChange = (value: string) => {
-    setQuery(value);
-    setShowSuggestions(value.length > 0);
-  };
-
-  const handleInputFocus = () => {
-    if (!isLoggedIn && query.length > 0) {
-      setShowSuggestions(true);
-    }
-  };
-
-  const handleInputBlur = () => {
-    // Small delay to allow option selection to complete
-    setTimeout(() => {
-      setShowSuggestions(false);
-    }, 200);
   };
 
   return (
     <div className="w-64">
-      <Combobox value={selected} onChange={handleSelect} disabled={isLoggedIn}>
+      <Combobox value={selected} onChange={setSelected} disabled={isLoggedIn}>
         <div className="relative">
           <div className="relative w-full">
             <Combobox.Input
               className="w-full rounded-lg border-2 border-gray-300 bg-white py-2 pl-4 pr-10 text-gray-900 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
-              placeholder="Username..."
-              onChange={(event) => handleInputChange(event.target.value)}
-              onKeyPress={handleKeyPress}
-              onFocus={handleInputFocus}
-              onBlur={handleInputBlur}
+              placeholder={getPlaceholderText()}
+              type={isPasswordMode ? "password" : "text"}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={handleKeyPress}
               value={query}
               readOnly={isLoggedIn}
             />
             <button
-              onClick={handleLockClick}
-              className={`absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer hover:opacity-75 transition-opacity ${!isLoggedIn && !query.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
-              title={isLoggedIn ? "Log out" : "Log in"}
-              disabled={!isLoggedIn && !query.trim()}
+              onClick={isLoggedIn ? handleLogout : handleInputSubmit}
+              disabled={isLoading}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer hover:opacity-75 transition-opacity"
             >
-              {isLoggedIn ? (
-                <LockOpenIcon className="h-5 w-5 text-green-500" aria-hidden="true" />
+              {isLoading ? (
+                <div className="animate-spin h-5 w-5 border-2 border-gray-500 rounded-full border-t-transparent" />
+              ) : isLoggedIn ? (
+                <LockOpenIcon className="h-5 w-5 text-green-500" />
               ) : (
-                <LockClosedIcon className="h-5 w-5 text-red-500" aria-hidden="true" />
+                <LockClosedIcon className="h-5 w-5 text-red-500" />
               )}
             </button>
           </div>
-          <Transition
-            as={Fragment}
-            leave="transition ease-in duration-100"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-            show={showSuggestions && filteredUsers.length > 0 && !isLoggedIn}
-          >
-            <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-              {filteredUsers.map((user) => (
-                <Combobox.Option
-                  key={user.id}
-                  value={user}
-                  className={({ active }) =>
-                    `relative cursor-pointer select-none py-2 px-4 ${
-                      active ? 'bg-blue-500 text-white' : 'text-gray-900'
-                    }`
-                  }
-                >
-                  {user.name}
-                </Combobox.Option>
-              ))}
-            </Combobox.Options>
-          </Transition>
         </div>
       </Combobox>
     </div>
