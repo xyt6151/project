@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/24/solid';
 
 interface SettingsSectionProps {
@@ -6,10 +5,16 @@ interface SettingsSectionProps {
   icon: React.ComponentType<any>;
   isOpen: boolean;
   onToggle: () => void;
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-export default function SettingsSection({ title, icon: Icon, isOpen, onToggle, children }: SettingsSectionProps) {
+export default function SettingsSection({ 
+  title, 
+  icon: Icon, 
+  isOpen, 
+  onToggle, 
+  children 
+}: SettingsSectionProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <button
