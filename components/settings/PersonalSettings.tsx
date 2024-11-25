@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Switch } from '@headlessui/react';
 
-export function PersonalSettings() {
+export default function PersonalSettings() {
   const [settings, setSettings] = useState({
     darkMode: false,
     emailNotifications: true

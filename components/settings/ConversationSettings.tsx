@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export function ConversationSettings() {
+export default function ConversationSettings() {
   const [settings, setSettings] = useState({
     responseStyle: 'Professional',
     memoryContext: 5

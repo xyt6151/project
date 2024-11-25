@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { UserIcon, CogIcon, UsersIcon, ChatBubbleLeftRightIcon, KeyboardIcon } from '@heroicons/react/24/solid';
-import { SettingsSection } from '../ui/SettingsSection';
-import { PersonalSettings } from '../settings/PersonalSettings';
-import { ApiSettings } from '../settings/ApiSettings';
-import { UserManagement } from '../settings/UserManagement';
-import { ConversationSettings } from '../settings/ConversationSettings';
-import { InputSettings } from '../settings/InputSettings';
+import SettingsSection from '../ui/SettingsSection';
+import PersonalSettings from '../settings/PersonalSettings';
+import ApiSettings from '../settings/ApiSettings';
+import UserManagement from '../settings/UserManagement';
+import ConversationSettings from '../settings/ConversationSettings';
+import InputSettings from '../settings/InputSettings';
 
 interface Section {
   id: string;
@@ -33,17 +33,20 @@ export default function Settings() {
 
   return (
     <div className="space-y-4">
-      {sections.map(section => (
-        <SettingsSection
-          key={section.id}
-          title={section.title}
-          icon={section.icon}
-          isOpen={section.isOpen}
-          onToggle={() => toggleSection(section.id)}
-        >
-          <section.component />
-        </SettingsSection>
-      ))}
+      {sections.map(section => {
+        const Component = section.component;
+        return (
+          <SettingsSection
+            key={section.id}
+            title={section.title}
+            icon={section.icon}
+            isOpen={section.isOpen}
+            onToggle={() => toggleSection(section.id)}
+          >
+            <Component />
+          </SettingsSection>
+        );
+      })}
     </div>
   );
 }

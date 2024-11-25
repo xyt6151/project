@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export function ApiSettings() {
+export default function ApiSettings() {
   const [settings, setSettings] = useState({
     webhookUrl: '',
     apiVersion: 'v1.0'

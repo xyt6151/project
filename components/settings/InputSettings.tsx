@@ -6,7 +6,7 @@ interface InputMethod {
   enabled: boolean;
 }
 
-export function InputSettings() {
+export default function InputSettings() {
   const [inputMethods, setInputMethods] = useState<InputMethod[]>([
     { id: 'text', name: 'Text', enabled: true },
     { id: 'voice', name: 'Voice', enabled: false },

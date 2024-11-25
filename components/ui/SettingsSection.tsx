@@ -9,7 +9,7 @@ interface SettingsSectionProps {
   children: ReactNode;
 }
 
-export function SettingsSection({ title, icon: Icon, isOpen, onToggle, children }: SettingsSectionProps) {
+export default function SettingsSection({ title, icon: Icon, isOpen, onToggle, children }: SettingsSectionProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <button

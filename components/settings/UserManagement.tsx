@@ -1,12 +1,12 @@
 import { useState } from 'react';
-
+//
 interface User {
   id: string;
   role: string;
   active: boolean;
 }
 
-export function UserManagement() {
+export default function UserManagement() {
   const [users] = useState<User[]>([
     { id: '1', role: 'Admin', active: true },
     { id: '2', role: 'Editor', active: true },
