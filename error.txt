@@ -1676,3 +1676,4 @@ Error: Element type is invalid: expected a string (for built-in components) or a
     at renderNodeDestructiveImpl (C:\Users\user\Downloads\MORGAN-web-frontend-(bolt-26-11-2024)\project\node_modules\react-dom\cjs\react-dom-server.browser.development.js:6152:7) {
   page: '/'
 }
+ [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
