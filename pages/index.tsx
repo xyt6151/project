@@ -5,7 +5,7 @@ import UserCombobox from '../components/UserCombobox';
 import CollapsibleSection from '../components/CollapsibleSection';
 import SystemChat from '../components/sections/SystemChat';
 import ApiKeys from '../components/sections/ApiKeys';
-import Settings from '../components/sections/Settings';
+import Settings from '../components/settings/Settings';
 import Placeholder from '../components/sections/Placeholder';
 
 const sections = [

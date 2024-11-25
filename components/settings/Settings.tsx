@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { UserIcon, CogIcon, UsersIcon, ChatBubbleLeftRightIcon, KeyboardIcon } from '@heroicons/react/24/solid';
-import SettingsSection from '../ui/SettingsSection';
+import SettingsSection from '@/components/ui/SettingsSection';
 import PersonalSettings from './PersonalSettings';
 import ApiSettings from './ApiSettings';
 import UserManagement from './UserManagement';
